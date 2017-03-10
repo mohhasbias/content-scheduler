@@ -14,7 +14,7 @@ The cookbook section contains recipes for solving specific problems.
     sub_requests
     error_handler
     multiple_loggers
-    guard_authentication
+    assets
 
 Recipes
 -------
@@ -37,4 +37,4 @@ Recipes
 
 * :doc:`Using multiple Monolog Loggers <multiple_loggers>`.
 
-* :doc:`How to Create a Custom Authentication System with Guard <guard_authentication>`.
+* :doc:`Managing Assets in Templates <assets>`.

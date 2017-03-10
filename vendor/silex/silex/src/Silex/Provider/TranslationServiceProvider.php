@@ -11,32 +11,32 @@
 
 namespace Silex\Provider;
 
-use Pimple\Container;
-use Pimple\ServiceProviderInterface;
-use Symfony\Component\Translation\Translator;
+use Silex\Application;
+use Silex\ServiceProviderInterface;
+use Silex\Translator;
 use Symfony\Component\Translation\MessageSelector;
 use Symfony\Component\Translation\Loader\ArrayLoader;
 use Symfony\Component\Translation\Loader\XliffFileLoader;
-use Symfony\Component\EventDispatcher\EventDispatcherInterface;
-use Symfony\Component\HttpKernel\EventListener\TranslatorListener;
-use Silex\Api\EventListenerProviderInterface;
 
 /**
  * Symfony Translation component Provider.
  *
  * @author Fabien Potencier <fabien@symfony.com>
  */
-class TranslationServiceProvider implements ServiceProviderInterface, EventListenerProviderInterface
+class TranslationServiceProvider implements ServiceProviderInterface
 {
-    public function register(Container $app)
+    public function register(Application $app)
     {
-        $app['translator'] = function ($app) {
-            if (!isset($app['locale'])) {
-                throw new \LogicException('You must define \'locale\' parameter or register the LocaleServiceProvider to use the TranslationServiceProvider');
+        $app['translator'] = $app->share(function ($app) {
+            $translator = new Translator($app, $app['translator.message_selector'], $app['translator.cache_dir'], $app['debug']);
+
+            // Handle deprecated 'locale_fallback'
+            if (isset($app['locale_fallback'])) {
+                $app['locale_fallbacks'] = (array) $app['locale_fallback'];
             }
 
-            $translator = new Translator($app['locale'], $app['translator.message_selector'], $app['translator.cache_dir'], $app['debug']);
             $translator->setFallbackLocales($app['locale_fallbacks']);
+
             $translator->addLoader('array', new ArrayLoader());
             $translator->addLoader('xliff', new XliffFileLoader());
 
@@ -68,20 +68,14 @@ class TranslationServiceProvider implements ServiceProviderInterface, EventListe
             }
 
             return $translator;
-        };
+        });
 
-        if (isset($app['request_stack'])) {
-            $app['translator.listener'] = function ($app) {
-                return new TranslatorListener($app['translator'], $app['request_stack']);
-            };
-        }
-
-        $app['translator.message_selector'] = function () {
-            return new MessageSelector();
-        };
-
-        $app['translator.resources'] = $app->protect(function ($app) {
+        $app['translator.resources'] = function ($app) {
             return array();
+        };
+
+        $app['translator.message_selector'] = $app->share(function () {
+            return new MessageSelector();
         });
 
         $app['translator.domains'] = array();
@@ -89,10 +83,7 @@ class TranslationServiceProvider implements ServiceProviderInterface, EventListe
         $app['translator.cache_dir'] = null;
     }
 
-    public function subscribe(Container $app, EventDispatcherInterface $dispatcher)
+    public function boot(Application $app)
     {
-        if (isset($app['translator.listener'])) {
-            $dispatcher->addSubscriber($app['translator.listener']);
-        }
     }
 }

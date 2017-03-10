@@ -11,7 +11,6 @@
 
 namespace Silex\Tests;
 
-use Pimple\Container;
 use Silex\CallbackResolver;
 
 class CallbackResolverTest extends \PHPUnit_Framework_Testcase
@@ -21,61 +20,33 @@ class CallbackResolverTest extends \PHPUnit_Framework_Testcase
 
     public function setup()
     {
-        $this->app = new Container();
+        $this->app = new \Pimple();
         $this->resolver = new CallbackResolver($this->app);
     }
 
     public function testShouldResolveCallback()
     {
-        $callable = function () {};
-        $this->app['some_service'] = function () { return new \ArrayObject(); };
-        $this->app['callable_service'] = function () use ($callable) {
-            return $callable;
-        };
+        $this->app['some_service'] = function () { return new \stdClass(); };
 
         $this->assertTrue($this->resolver->isValid('some_service:methodName'));
-        $this->assertTrue($this->resolver->isValid('callable_service'));
         $this->assertEquals(
-            array($this->app['some_service'], 'append'),
-            $this->resolver->convertCallback('some_service:append')
+            array($this->app['some_service'], 'methodName'),
+            $this->resolver->convertCallback('some_service:methodName')
         );
-        $this->assertSame($callable, $this->resolver->convertCallback('callable_service'));
     }
 
-    /**
-     * @dataProvider nonStringsAreNotValidProvider
-     */
-    public function testNonStringsAreNotValid($name)
+    public function testNonStringsAreNotValid()
     {
-        $this->assertFalse($this->resolver->isValid($name));
-    }
-
-    public function nonStringsAreNotValidProvider()
-    {
-        return array(
-            array(null),
-            array('some_service::methodName'),
-            array('missing_service'),
-        );
+        $this->assertFalse($this->resolver->isValid(null));
+        $this->assertFalse($this->resolver->isValid('some_service::methodName'));
     }
 
     /**
      * @expectedException          \InvalidArgumentException
-     * @expectedExceptionMessageRegExp  /Service "[a-z_]+" is not callable./
-     * @dataProvider shouldThrowAnExceptionIfServiceIsNotCallableProvider
+     * @expectedExceptionMessage   Service "some_service" does not exist.
      */
-    public function testShouldThrowAnExceptionIfServiceIsNotCallable($name)
+    public function testShouldThrowAnExceptionIfServiceIsMissing()
     {
-        $this->app['non_callable_obj'] = function () { return new \stdClass(); };
-        $this->app['non_callable'] = function () { return array(); };
-        $this->resolver->convertCallback($name);
-    }
-
-    public function shouldThrowAnExceptionIfServiceIsNotCallableProvider()
-    {
-        return array(
-            array('non_callable_obj:methodA'),
-            array('non_callable'),
-        );
+        $this->resolver->convertCallback('some_service:methodName');
     }
 }

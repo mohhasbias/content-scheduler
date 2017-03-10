@@ -13,9 +13,6 @@ namespace Silex\Tests\Provider;
 
 use Silex\Application;
 use Silex\Provider\TranslationServiceProvider;
-use Silex\Provider\LocaleServiceProvider;
-use Symfony\Component\HttpFoundation\Request;
-use Symfony\Component\HttpKernel\HttpKernelInterface;
 
 /**
  * TranslationProvider test cases.
@@ -31,7 +28,6 @@ class TranslationServiceProviderTest extends \PHPUnit_Framework_TestCase
     {
         $app = new Application();
 
-        $app->register(new LocaleServiceProvider());
         $app->register(new TranslationServiceProvider());
         $app['translator.domains'] = array(
             'messages' => array(
@@ -106,6 +102,15 @@ class TranslationServiceProviderTest extends \PHPUnit_Framework_TestCase
         $this->assertEquals($expected, $result);
     }
 
+    public function testBackwardCompatiblityForFallback()
+    {
+        $app = $this->getPreparedApp();
+        $app['locale_fallback'] = 'de';
+
+        $result = $app['translator']->trans('key1', array(), null, 'ru');
+        $this->assertEquals('The german translation', $result);
+    }
+
     public function testFallbacks()
     {
         $app = $this->getPreparedApp();
@@ -120,62 +125,26 @@ class TranslationServiceProviderTest extends \PHPUnit_Framework_TestCase
         $this->assertEquals('The german translation', $result);
     }
 
-    public function testLocale()
+    public function testChangingLocale()
     {
         $app = $this->getPreparedApp();
-        $app->get('/', function () use ($app) { return $app['translator']->getLocale(); });
-        $response = $app->handle(Request::create('/'));
-        $this->assertEquals('en', $response->getContent());
 
-        $app = $this->getPreparedApp();
-        $app->get('/', function () use ($app) { return $app['translator']->getLocale(); });
-        $request = Request::create('/');
-        $request->setLocale('fr');
-        $response = $app->handle($request);
-        $this->assertEquals('fr', $response->getContent());
+        $this->assertEquals('The translation', $app['translator']->trans('key1'));
 
-        $app = $this->getPreparedApp();
-        $app->get('/{_locale}', function () use ($app) { return $app['translator']->getLocale(); });
-        $response = $app->handle(Request::create('/es'));
-        $this->assertEquals('es', $response->getContent());
+        $app['locale'] = 'de';
+
+        $this->assertEquals('The german translation', $app['translator']->trans('key1'));
     }
 
-    public function testLocaleInSubRequests()
+    public function testChangingLocaleViaTranslator()
     {
         $app = $this->getPreparedApp();
-        $app->get('/embed/{_locale}', function () use ($app) { return $app['translator']->getLocale(); });
-        $app->get('/{_locale}', function () use ($app) {
-            return $app['translator']->getLocale().
-                   $app->handle(Request::create('/embed/es'), HttpKernelInterface::SUB_REQUEST)->getContent().
-                   $app['translator']->getLocale();
-        });
-        $response = $app->handle(Request::create('/fr'));
-        $this->assertEquals('fresfr', $response->getContent());
 
-        $app = $this->getPreparedApp();
-        $app->get('/embed', function () use ($app) { return $app['translator']->getLocale(); });
-        $app->get('/{_locale}', function () use ($app) {
-            return $app['translator']->getLocale().
-                   $app->handle(Request::create('/embed'), HttpKernelInterface::SUB_REQUEST)->getContent().
-                   $app['translator']->getLocale();
-        });
-        $response = $app->handle(Request::create('/fr'));
-        // locale in sub-request must be "en" as this is the value if the sub-request is converted to an ESI
-        $this->assertEquals('frenfr', $response->getContent());
-    }
+        $this->assertEquals('The translation', $app['translator']->trans('key1'));
 
-    public function testLocaleWithBefore()
-    {
-        $app = $this->getPreparedApp();
-        $app->before(function (Request $request) { $request->setLocale('fr'); }, Application::EARLY_EVENT);
-        $app->get('/embed', function () use ($app) { return $app['translator']->getLocale(); });
-        $app->get('/', function () use ($app) {
-            return $app['translator']->getLocale().
-                $app->handle(Request::create('/embed'), HttpKernelInterface::SUB_REQUEST)->getContent().
-                $app['translator']->getLocale();
-        });
-        $response = $app->handle(Request::create('/'));
-        // locale in sub-request is "en" as the before filter is only executed for the main request
-        $this->assertEquals('frenfr', $response->getContent());
+        $app['translator']->setLocale('de');
+
+        $this->assertEquals('The german translation', $app['translator']->trans('key1'));
+        $this->assertEquals('de', $app['locale']);
     }
 }

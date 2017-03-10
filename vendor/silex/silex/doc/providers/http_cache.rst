@@ -1,5 +1,5 @@
-HTTP Cache
-==========
+HttpCacheServiceProvider
+========================
 
 The *HttpCacheServiceProvider* provides support for the Symfony Reverse
 Proxy.
@@ -58,7 +58,9 @@ setting Response HTTP cache headers::
     in `Trusting Proxies
     <http://symfony.com/doc/current/components/http_foundation/trusting_proxies.html>`_.
 
-    If you would be running Varnish in front of your application on the same machine::
+    If you would be running Varnish in front of your application on the same machine:
+    
+    .. code-block:: php
 
         use Symfony\Component\HttpFoundation\Request;
         
@@ -67,7 +69,9 @@ setting Response HTTP cache headers::
 
 This provider allows you to use the Symfony reverse proxy natively with
 Silex applications by using the ``http_cache`` service. The Symfony reverse proxy
-acts much like any other proxy would, so you will want to whitelist it::
+acts much like any other proxy would, so you will want to whitelist it:
+
+.. code-block:: php
 
     use Symfony\Component\HttpFoundation\Request;
         

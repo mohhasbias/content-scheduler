@@ -182,8 +182,7 @@ look like this:
 .. code-block:: xml
 
     <?xml version="1.0" encoding="UTF-8"?>
-    <phpunit bootstrap="./vendor/autoload.php"
-             backupGlobals="false"
+    <phpunit backupGlobals="false"
              backupStaticAttributes="false"
              colors="true"
              convertErrorsToExceptions="true"

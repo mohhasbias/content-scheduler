@@ -12,7 +12,6 @@
 namespace Silex\Tests;
 
 use Silex\Application;
-use Silex\Provider\LocaleServiceProvider;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpKernel\HttpKernelInterface;
 
@@ -26,20 +25,17 @@ class LocaleTest extends \PHPUnit_Framework_TestCase
     public function testLocale()
     {
         $app = new Application();
-        $app->register(new LocaleServiceProvider());
         $app->get('/', function (Request $request) { return $request->getLocale(); });
         $response = $app->handle(Request::create('/'));
         $this->assertEquals('en', $response->getContent());
 
         $app = new Application();
-        $app->register(new LocaleServiceProvider());
         $app['locale'] = 'fr';
         $app->get('/', function (Request $request) { return $request->getLocale(); });
         $response = $app->handle(Request::create('/'));
         $this->assertEquals('fr', $response->getContent());
 
         $app = new Application();
-        $app->register(new LocaleServiceProvider());
         $app->get('/{_locale}', function (Request $request) { return $request->getLocale(); });
         $response = $app->handle(Request::create('/es'));
         $this->assertEquals('es', $response->getContent());
@@ -48,7 +44,6 @@ class LocaleTest extends \PHPUnit_Framework_TestCase
     public function testLocaleInSubRequests()
     {
         $app = new Application();
-        $app->register(new LocaleServiceProvider());
         $app->get('/embed/{_locale}', function (Request $request) { return $request->getLocale(); });
         $app->get('/{_locale}', function (Request $request) use ($app) {
             return $request->getLocale().$app->handle(Request::create('/embed/es'), HttpKernelInterface::SUB_REQUEST)->getContent().$request->getLocale();
@@ -57,7 +52,6 @@ class LocaleTest extends \PHPUnit_Framework_TestCase
         $this->assertEquals('fresfr', $response->getContent());
 
         $app = new Application();
-        $app->register(new LocaleServiceProvider());
         $app->get('/embed', function (Request $request) { return $request->getLocale(); });
         $app->get('/{_locale}', function (Request $request) use ($app) {
             return $request->getLocale().$app->handle(Request::create('/embed'), HttpKernelInterface::SUB_REQUEST)->getContent().$request->getLocale();
@@ -70,7 +64,6 @@ class LocaleTest extends \PHPUnit_Framework_TestCase
     public function testLocaleWithBefore()
     {
         $app = new Application();
-        $app->register(new LocaleServiceProvider());
         $app->before(function (Request $request) use ($app) { $request->setLocale('fr'); });
         $app->get('/embed', function (Request $request) { return $request->getLocale(); });
         $app->get('/', function (Request $request) use ($app) {

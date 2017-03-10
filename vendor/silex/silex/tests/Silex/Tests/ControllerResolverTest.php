@@ -22,9 +22,6 @@ use Symfony\Component\HttpFoundation\Request;
  */
 class ControllerResolverTest extends \PHPUnit_Framework_TestCase
 {
-    /**
-     * @group legacy
-     */
     public function testGetArguments()
     {
         $app = new Application();

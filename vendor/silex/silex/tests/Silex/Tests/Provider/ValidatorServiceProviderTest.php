@@ -32,8 +32,8 @@ class ValidatorServiceProviderTest extends \PHPUnit_Framework_TestCase
     public function testRegister()
     {
         $app = new Application();
+
         $app->register(new ValidatorServiceProvider());
-        $app->register(new FormServiceProvider());
 
         return $app;
     }
@@ -42,9 +42,9 @@ class ValidatorServiceProviderTest extends \PHPUnit_Framework_TestCase
     {
         $app = new Application();
 
-        $app['custom.validator'] = function () {
+        $app['custom.validator'] = $app->share(function () {
             return new CustomValidator();
-        };
+        });
 
         $app->register(new ValidatorServiceProvider(), array(
             'validator.validator_service_ids' => array(
@@ -60,7 +60,7 @@ class ValidatorServiceProviderTest extends \PHPUnit_Framework_TestCase
      */
     public function testConstraintValidatorFactory($app)
     {
-        $this->assertInstanceOf('Silex\Provider\Validator\ConstraintValidatorFactory', $app['validator.validator_factory']);
+        $this->assertInstanceOf('Silex\ConstraintValidatorFactory', $app['validator.validator_factory']);
 
         $validator = $app['validator.validator_factory']->getInstance(new Custom());
         $this->assertInstanceOf('Silex\Tests\Provider\ValidatorServiceProviderTest\Constraint\CustomValidator', $validator);
@@ -71,6 +71,10 @@ class ValidatorServiceProviderTest extends \PHPUnit_Framework_TestCase
      */
     public function testConstraintValidatorFactoryWithExpression($app)
     {
+        if (!class_exists('Symfony\Component\Validator\Constraints\Expression')) {
+            $this->markTestSkipped('Expression are not supported by this version of Symfony');
+        }
+
         $constraint = new Assert\Expression('true');
         $validator = $app['validator.validator_factory']->getInstance($constraint);
         $this->assertInstanceOf('Symfony\Component\Validator\Constraints\ExpressionValidator', $validator);
@@ -90,6 +94,9 @@ class ValidatorServiceProviderTest extends \PHPUnit_Framework_TestCase
      */
     public function testValidatorConstraint($email, $isValid, $nbGlobalError, $nbEmailError, $app)
     {
+        $app->register(new ValidatorServiceProvider());
+        $app->register(new FormServiceProvider());
+
         $constraints = new Assert\Collection(array(
             'email' => array(
                 new Assert\NotBlank(),
@@ -97,12 +104,13 @@ class ValidatorServiceProviderTest extends \PHPUnit_Framework_TestCase
             ),
         ));
 
-        $builder = $app['form.factory']->createBuilder('Symfony\Component\Form\Extension\Core\Type\FormType', array(), array(
+        $builder = $app['form.factory']->createBuilder(class_exists('Symfony\Component\Form\Extension\Core\Type\RangeType') ? 'Symfony\Component\Form\Extension\Core\Type\FormType' : 'form', array(), array(
             'constraints' => $constraints,
+            'csrf_protection' => false,
         ));
 
         $form = $builder
-            ->add('email', 'Symfony\Component\Form\Extension\Core\Type\EmailType', array('label' => 'Email'))
+            ->add('email', class_exists('Symfony\Component\Form\Extension\Core\Type\RangeType') ? 'Symfony\Component\Form\Extension\Core\Type\EmailType' : 'email', array('label' => 'Email'))
             ->getForm()
         ;
 
@@ -154,11 +162,11 @@ class ValidatorServiceProviderTest extends \PHPUnit_Framework_TestCase
 
         $app->register(new ValidatorServiceProvider());
         $app->register(new TranslationServiceProvider());
-        $app['translator'] = $app->extend('translator', function ($translator, $app) {
+        $app['translator'] = $app->share($app->extend('translator', function ($translator, $app) {
             $translator->addResource('array', array('This value should not be blank.' => 'Pas vide'), 'fr', 'validators');
 
             return $translator;
-        });
+        }));
 
         if ($registerValidatorFirst) {
             $app['validator'];
@@ -179,13 +187,13 @@ class ValidatorServiceProviderTest extends \PHPUnit_Framework_TestCase
 
         $app->register(new ValidatorServiceProvider());
         $app->register(new TranslationServiceProvider());
-        $app->factory($app->extend('translator.resources', function ($resources, $app) {
+        $app->extend('translator.resources', function ($resources, $app) {
             $resources = array_merge($resources, array(
                 array('array', array('This value should not be blank.' => 'Pas vide'), 'fr', 'validators'),
             ));
 
             return $resources;
-        }));
+        });
 
         $app['validator'];
 

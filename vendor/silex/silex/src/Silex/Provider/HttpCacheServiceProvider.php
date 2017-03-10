@@ -11,13 +11,12 @@
 
 namespace Silex\Provider;
 
-use Pimple\Container;
-use Pimple\ServiceProviderInterface;
-use Silex\Provider\HttpCache\HttpCache;
-use Silex\Api\EventListenerProviderInterface;
-use Symfony\Component\EventDispatcher\EventDispatcherInterface;
+use Silex\Application;
+use Silex\ServiceProviderInterface;
+use Silex\HttpCache;
 use Symfony\Component\HttpKernel\HttpCache\Esi;
 use Symfony\Component\HttpKernel\HttpCache\Store;
+use Symfony\Component\HttpKernel\EventListener\EsiListener;
 use Symfony\Component\HttpKernel\EventListener\SurrogateListener;
 
 /**
@@ -25,11 +24,11 @@ use Symfony\Component\HttpKernel\EventListener\SurrogateListener;
  *
  * @author Fabien Potencier <fabien@symfony.com>
  */
-class HttpCacheServiceProvider implements ServiceProviderInterface, EventListenerProviderInterface
+class HttpCacheServiceProvider implements ServiceProviderInterface
 {
-    public function register(Container $app)
+    public function register(Application $app)
     {
-        $app['http_cache'] = function ($app) {
+        $app['http_cache'] = $app->share(function ($app) {
             $app['http_cache.options'] = array_replace(
                 array(
                     'debug' => $app['debug'],
@@ -37,25 +36,29 @@ class HttpCacheServiceProvider implements ServiceProviderInterface, EventListene
             );
 
             return new HttpCache($app, $app['http_cache.store'], $app['http_cache.esi'], $app['http_cache.options']);
-        };
+        });
 
-        $app['http_cache.esi'] = function ($app) {
+        $app['http_cache.esi'] = $app->share(function ($app) {
             return new Esi();
-        };
+        });
 
-        $app['http_cache.store'] = function ($app) {
+        $app['http_cache.store'] = $app->share(function ($app) {
             return new Store($app['http_cache.cache_dir']);
-        };
+        });
 
-        $app['http_cache.esi_listener'] = function ($app) {
-            return new SurrogateListener($app['http_cache.esi']);
-        };
+        $app['http_cache.esi_listener'] = $app->share(function ($app) {
+            if (class_exists('Symfony\Component\HttpKernel\EventListener\SurrogateListener')) {
+                return new SurrogateListener($app['http_cache.esi']);
+            }
+
+            return new EsiListener($app['http_cache.esi']);
+        });
 
         $app['http_cache.options'] = array();
     }
 
-    public function subscribe(Container $app, EventDispatcherInterface $dispatcher)
+    public function boot(Application $app)
     {
-        $dispatcher->addSubscriber($app['http_cache.esi_listener']);
+        $app['dispatcher']->addSubscriber($app['http_cache.esi_listener']);
     }
 }

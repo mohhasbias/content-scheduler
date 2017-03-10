@@ -11,7 +11,6 @@
 
 namespace Silex\Tests\EventListener;
 
-use Psr\Log\LogLevel;
 use Silex\EventListener\LogListener;
 use Symfony\Component\HttpKernel\Event\GetResponseEvent;
 use Symfony\Component\HttpKernel\Event\FilterResponseEvent;
@@ -32,17 +31,17 @@ class LogListenerTest extends \PHPUnit_Framework_TestCase
 {
     public function testRequestListener()
     {
-        $logger = $this->getMockBuilder('Psr\\Log\\LoggerInterface')->getMock();
+        $logger = $this->getMock('Psr\\Log\\LoggerInterface');
         $logger
             ->expects($this->once())
-            ->method('log')
-            ->with(LogLevel::DEBUG, '> GET /foo')
+            ->method('info')
+            ->with($this->equalTo('> GET /foo'))
         ;
 
         $dispatcher = new EventDispatcher();
         $dispatcher->addSubscriber(new LogListener($logger));
 
-        $kernel = $this->getMockBuilder('Symfony\\Component\\HttpKernel\\HttpKernelInterface')->getMock();
+        $kernel = $this->getMock('Symfony\\Component\\HttpKernel\\HttpKernelInterface');
 
         $dispatcher->dispatch(KernelEvents::REQUEST, new GetResponseEvent($kernel, Request::create('/subrequest'), HttpKernelInterface::SUB_REQUEST), 'Skip sub requests');
 
@@ -51,17 +50,17 @@ class LogListenerTest extends \PHPUnit_Framework_TestCase
 
     public function testResponseListener()
     {
-        $logger = $this->getMockBuilder('Psr\\Log\\LoggerInterface')->getMock();
+        $logger = $this->getMock('Psr\\Log\\LoggerInterface');
         $logger
             ->expects($this->once())
-            ->method('log')
-            ->with(LogLevel::DEBUG, '< 301')
+            ->method('info')
+            ->with($this->equalTo('< 301'))
         ;
 
         $dispatcher = new EventDispatcher();
         $dispatcher->addSubscriber(new LogListener($logger));
 
-        $kernel = $this->getMockBuilder('Symfony\\Component\\HttpKernel\\HttpKernelInterface')->getMock();
+        $kernel = $this->getMock('Symfony\\Component\\HttpKernel\\HttpKernelInterface');
 
         $dispatcher->dispatch(KernelEvents::RESPONSE, new FilterResponseEvent($kernel, Request::create('/foo'), HttpKernelInterface::SUB_REQUEST, Response::create('subrequest', 200)), 'Skip sub requests');
 
@@ -70,24 +69,26 @@ class LogListenerTest extends \PHPUnit_Framework_TestCase
 
     public function testExceptionListener()
     {
-        $logger = $this->getMockBuilder('Psr\\Log\\LoggerInterface')->getMock();
+        $logger = $this->getMock('Psr\\Log\\LoggerInterface');
         $logger
-            ->expects($this->at(0))
-            ->method('log')
-            ->with(LogLevel::CRITICAL, 'RuntimeException: Fatal error (uncaught exception) at '.__FILE__.' line '.(__LINE__ + 13))
+            ->expects($this->once())
+            ->method('critical')
+            ->with($this->equalTo('RuntimeException: Fatal error (uncaught exception) at '.__FILE__.' line '.(__LINE__ + 14)))
         ;
+
         $logger
-            ->expects($this->at(1))
-            ->method('log')
-            ->with(LogLevel::ERROR, 'Symfony\Component\HttpKernel\Exception\HttpException: Http error (uncaught exception) at '.__FILE__.' line '.(__LINE__ + 9))
+            ->expects($this->once())
+            ->method('error')
+            ->with($this->equalTo('Symfony\Component\HttpKernel\Exception\HttpException: Http error (uncaught exception) at '.__FILE__.' line '.(__LINE__ + 10)))
         ;
 
         $dispatcher = new EventDispatcher();
         $dispatcher->addSubscriber(new LogListener($logger));
 
-        $kernel = $this->getMockBuilder('Symfony\\Component\\HttpKernel\\HttpKernelInterface')->getMock();
+        $kernel = $this->getMock('Symfony\\Component\\HttpKernel\\HttpKernelInterface');
 
         $dispatcher->dispatch(KernelEvents::EXCEPTION, new GetResponseForExceptionEvent($kernel, Request::create('/foo'), HttpKernelInterface::SUB_REQUEST, new \RuntimeException('Fatal error')));
+
         $dispatcher->dispatch(KernelEvents::EXCEPTION, new GetResponseForExceptionEvent($kernel, Request::create('/foo'), HttpKernelInterface::SUB_REQUEST, new HttpException(400, 'Http error')));
     }
 }

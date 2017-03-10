@@ -19,29 +19,48 @@ use Symfony\Component\HttpKernel\Event\GetResponseForExceptionEvent;
 use Symfony\Component\HttpKernel\KernelEvents;
 
 /**
- * Default exception handler.
+ * Defaults exception handler.
  *
  * @author Fabien Potencier <fabien@symfony.com>
  */
 class ExceptionHandler implements EventSubscriberInterface
 {
     protected $debug;
+    protected $enabled;
 
     public function __construct($debug)
     {
         $this->debug = $debug;
+        $this->enabled = true;
+    }
+
+    /**
+     * @deprecated since 1.3, to be removed in 2.0
+     */
+    public function disable()
+    {
+        $this->enabled = false;
     }
 
     public function onSilexError(GetResponseForExceptionEvent $event)
     {
-        $handler = new DebugExceptionHandler($this->debug);
-
-        $exception = $event->getException();
-        if (!$exception instanceof FlattenException) {
-            $exception = FlattenException::create($exception);
+        if (!$this->enabled) {
+            return;
         }
 
-        $response = Response::create($handler->getHtml($exception), $exception->getStatusCode(), $exception->getHeaders())->setCharset(ini_get('default_charset'));
+        $handler = new DebugExceptionHandler($this->debug);
+
+        if (method_exists($handler, 'getHtml')) {
+            $exception = $event->getException();
+            if (!$exception instanceof FlattenException) {
+                $exception = FlattenException::create($exception);
+            }
+
+            $response = Response::create($handler->getHtml($exception), $exception->getStatusCode(), $exception->getHeaders())->setCharset(ini_get('default_charset'));
+        } else {
+            // BC with Symfony < 2.8
+            $response = $handler->createResponse($event->getException());
+        }
 
         $event->setResponse($response);
     }

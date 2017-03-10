@@ -1,5 +1,5 @@
-Form
-====
+FormServiceProvider
+===================
 
 The *FormServiceProvider* provides a service for building forms in
 your application with the Symfony Form component.
@@ -7,7 +7,10 @@ your application with the Symfony Form component.
 Parameters
 ----------
 
-* none
+* **form.secret**: This secret value is used for generating and validating the
+  CSRF token for a specific page. It is very important for you to set this
+  value to a static randomly generated value, to prevent hijacking of your
+  forms. Defaults to ``md5(__DIR__)``.
 
 Services
 --------
@@ -15,6 +18,11 @@ Services
 * **form.factory**: An instance of `FormFactory
   <http://api.symfony.com/master/Symfony/Component/Form/FormFactory.html>`_,
   that is used to build a form.
+
+* **form.csrf_provider**: An instance of an implementation of
+  `CsrfProviderInterface
+  <http://api.symfony.com/2.3/Symfony/Component/Form/Extension/Csrf/CsrfProvider/CsrfProviderInterface.html>`_ for Symfony 2.3 or
+  `CsrfTokenManagerInterface <http://api.symfony.com/2.7/Symfony/Component/Security/Csrf/CsrfTokenManagerInterface.html>`_ for Symfony 2.4+.
 
 Registering
 -----------
@@ -29,18 +37,16 @@ Registering
 
     If you don't want to create your own form layout, it's fine: a default one
     will be used. But you will have to register the :doc:`translation provider
-    <translation>` as the default form layout requires it::
-
-        $app->register(new Silex\Provider\TranslationServiceProvider(), array(
-            'translator.domains' => array(),
-        ));
+    <translation>` as the default form layout requires it.
 
     If you want to use validation with forms, do not forget to register the
     :doc:`Validator provider <validator>`.
 
 .. note::
 
-    Add the Symfony Form Component as a dependency:
+    The Symfony Form Component and all its dependencies (optional or not) comes
+    with the "fat" Silex archive but not with the regular one. If you are using
+    Composer, add it as a dependency:
 
     .. code-block:: bash
 
@@ -53,6 +59,13 @@ Registering
     .. code-block:: bash
 
         composer require symfony/validator symfony/config symfony/translation
+        
+    The Symfony Security CSRF component is used to protect forms against CSRF
+    attacks (as of Symfony 2.4+):
+
+    .. code-block:: bash
+    
+        composer require symfony/security-csrf
 
     If you want to use forms in your Twig templates, you can also install the
     Symfony Twig Bridge. Make sure to install, if you didn't do that already,
@@ -60,16 +73,13 @@ Registering
 
     .. code-block:: bash
 
-        composer require symfony/twig-bridge symfony/config symfony/translation
+        composer require symfony/twig-bridge symfony/translation
 
 Usage
 -----
 
 The FormServiceProvider provides a ``form.factory`` service. Here is a usage
 example::
-
-    use Symfony\Component\Form\Extension\Core\Type\FormType;
-    use Symfony\Component\Form\Extension\Core\Type\ChoiceType;
 
     $app->match('/form', function (Request $request) use ($app) {
         // some default data for when the form is displayed the first time
@@ -78,10 +88,10 @@ example::
             'email' => 'Your email',
         );
 
-        $form = $app['form.factory']->createBuilder(FormType::class, $data)
+        $form = $app['form.factory']->createBuilder('form', $data)
             ->add('name')
             ->add('email')
-            ->add('billing_plan', ChoiceType::class, array(
+            ->add('billing_plan', 'choice', array(
                 'choices' => array(1 => 'free', 2 => 'small_business', 3 => 'corporate'),
                 'expanded' => true,
             ))
@@ -115,9 +125,6 @@ And here is the ``index.twig`` form template (requires ``symfony/twig-bridge``):
 If you are using the validator provider, you can also add validation to your
 form by adding constraints on the fields::
 
-    use Symfony\Component\Form\Extension\Core\Type\FormType;
-    use Symfony\Component\Form\Extension\Core\Type\TextType;
-    use Symfony\Component\Form\Extension\Core\Type\ChoiceType;
     use Symfony\Component\Validator\Constraints as Assert;
 
     $app->register(new Silex\Provider\ValidatorServiceProvider());
@@ -125,14 +132,14 @@ form by adding constraints on the fields::
         'translator.domains' => array(),
     ));
 
-    $form = $app['form.factory']->createBuilder(FormType::class)
-        ->add('name', TextType::class, array(
+    $form = $app['form.factory']->createBuilder('form')
+        ->add('name', 'text', array(
             'constraints' => array(new Assert\NotBlank(), new Assert\Length(array('min' => 5)))
         ))
-        ->add('email', TextType::class, array(
+        ->add('email', 'text', array(
             'constraints' => new Assert\Email()
         ))
-        ->add('billing_plan', ChoiceType::class, array(
+        ->add('billing_plan', 'choice', array(
             'choices' => array(1 => 'free', 2 => 'small_business', 3 => 'corporate'),
             'expanded' => true,
             'constraints' => new Assert\Choice(array(1, 2, 3)),
@@ -141,53 +148,36 @@ form by adding constraints on the fields::
 
 You can register form types by extending ``form.types``::
 
-    $app['your.type.service'] = function ($app) {
-        return new YourServiceFormType();
-    };
-    $app->extend('form.types', function ($types) use ($app) {
+    $app['form.types'] = $app->share($app->extend('form.types', function ($types) use ($app) {
         $types[] = new YourFormType();
-        $types[] = 'your.type.service';
 
         return $types;
     }));
 
 You can register form extensions by extending ``form.extensions``::
 
-    $app->extend('form.extensions', function ($extensions) use ($app) {
+    $app['form.extensions'] = $app->share($app->extend('form.extensions', function ($extensions) use ($app) {
         $extensions[] = new YourTopFormExtension();
 
         return $extensions;
-    });
+    }));
 
 
 You can register form type extensions by extending ``form.type.extensions``::
 
-    $app['your.type.extension.service'] = function ($app) {
-        return new YourServiceFormTypeExtension();
-    };
-    $app->extend('form.type.extensions', function ($extensions) use ($app) {
+    $app['form.type.extensions'] = $app->share($app->extend('form.type.extensions', function ($extensions) use ($app) {
         $extensions[] = new YourFormTypeExtension();
-        $extensions[] = 'your.type.extension.service';
 
         return $extensions;
-    });
+    }));
 
 You can register form type guessers by extending ``form.type.guessers``::
 
-    $app['your.type.guesser.service'] = function ($app) {
-        return new YourServiceFormTypeGuesser();
-    };
-    $app->extend('form.type.guessers', function ($guessers) use ($app) {
+    $app['form.type.guessers'] = $app->share($app->extend('form.type.guessers', function ($guessers) use ($app) {
         $guessers[] = new YourFormTypeGuesser();
-        $guessers[] = 'your.type.guesser.service';
 
         return $guessers;
-    });
-
-.. warning::
-
-    CSRF protection is only available and automatically enabled when the
-    :doc:`CSRF Service Provider </providers/csrf>` is registered.
+    }));
 
 Traits
 ------
@@ -201,4 +191,4 @@ Traits
     $app->form($data);
 
 For more information, consult the `Symfony Forms documentation
-<http://symfony.com/doc/2.8/book/forms.html>`_.
+<http://symfony.com/doc/2.3/book/forms.html>`_.
