@@ -1,6 +1,7 @@
 scheduler:
-    host: "lecturer.pens.ac.id"
-    user: "user"
+    scheme: ftp
+    host: "hasbi.lecturer.pens.ac.id"
+    user: "hasbi@pens.ac.id"
     pass: 
     check: true
     secure: true
