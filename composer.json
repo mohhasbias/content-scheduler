@@ -1,0 +1,12 @@
+{
+    "name": "labmedia/scheduler",
+    "require": {
+        "silex/silex": "^2.0"
+    },
+    "authors": [
+        {
+            "name": "Moh Hasbi Assidiqi",
+            "email": "mohhasbias@gmail.com"
+        }
+    ]
+}
