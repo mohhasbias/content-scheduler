@@ -2,6 +2,7 @@
 
 error_reporting(-1);
 ini_set('display_errors', 'On');
+date_default_timezone_set('Asia/Jakarta');
 
 require_once __DIR__.'/vendor/autoload.php';
 
@@ -28,5 +29,15 @@ $app->get('/', function() use($app) {
     )
   );
 });
+
+// enable CORS
+$app->after(function ($request, $response) {
+        $response->headers->set('Access-Control-Allow-Origin', '*');
+        $response->headers->set('Access-Control-Allow-Headers', 'Authorization');
+    });
+
+$app->options("{anything}", function () {
+        return new \Symfony\Component\HttpFoundation\JsonResponse(null, 204);
+    })->assert("anything", ".*");
 
 $app->run();
