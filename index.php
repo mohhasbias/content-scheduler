@@ -34,6 +34,7 @@ $app->get('/', function() use($app) {
 $app->after(function ($request, $response) {
         $response->headers->set('Access-Control-Allow-Origin', '*');
         $response->headers->set('Access-Control-Allow-Headers', 'Authorization');
+        $response->headers->set('Access-Control-Allow-Methods: GET, POST, PUT');
     });
 
 $app->options("{anything}", function () {
