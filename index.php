@@ -32,15 +32,20 @@ $app->get('/', function() use($app) {
 
 // enable CORS
 $app->after(function ($request, $response) {
-        // $response->headers->set('Access-Control-Allow-Origin', '*');
-        $clientDomain = $request->getHost();
-        $whitelist = array('localhost', 'hasbi.lecturer.pens.ac.id');
-        if(in_array($clientDomain, $whitelist)) {
-          $response->headers->set('Access-Control-Allow-Origin', $clientDomain);
+        if(!isset($_SERVER['HTTP_ORIGIN'])) {
+          return;
+        }
+        $clientOrigin = $_SERVER['HTTP_ORIGIN'];
+        $clientDomain = parse_url($clientOrigin, PHP_URL_HOST);
+        $whitelistDomain = array('localhost', 'hasbi.lecturer.pens.ac.id');
+        if(in_array($clientDomain, $whitelistDomain)) {
+          $response->headers->set('Access-Control-Allow-Origin', $clientOrigin);
         }
         $response->headers->set('Access-Control-Allow-Headers', 'Authorization');
         $response->headers->set('Access-Control-Allow-Methods', 'GET, POST, PUT');
-        $response->headers->set('Client-Domain', $request->getHost());
+        // $response->headers->set('Http-Origin', $clientOrigin);
+        // $response->headers->set('Client-Domain', $clientDomain);
+        // $response->headers->set('In-Whitelist', in_array($clientDomain, $whitelistDomain));
     });
 
 $app->options("{anything}", function () {
