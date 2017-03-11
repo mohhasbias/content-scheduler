@@ -32,9 +32,15 @@ $app->get('/', function() use($app) {
 
 // enable CORS
 $app->after(function ($request, $response) {
-        $response->headers->set('Access-Control-Allow-Origin', '*');
+        // $response->headers->set('Access-Control-Allow-Origin', '*');
+        $clientDomain = $request->getHost();
+        $whitelist = array('localhost', 'hasbi.lecturer.pens.ac.id');
+        if(in_array($clientDomain, $whitelist)) {
+          $response->headers->set('Access-Control-Allow-Origin', $clientDomain);
+        }
         $response->headers->set('Access-Control-Allow-Headers', 'Authorization');
         $response->headers->set('Access-Control-Allow-Methods', 'GET, POST, PUT');
+        $response->headers->set('Client-Domain', $request->getHost());
     });
 
 $app->options("{anything}", function () {
