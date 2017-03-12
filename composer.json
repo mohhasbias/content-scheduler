@@ -1,7 +1,8 @@
 {
     "name": "labmedia/scheduler",
     "require": {
-        "silex/silex": "1.3.5"
+        "silex/silex": "1.3.5",
+        "fabpot/goutte": "2.0.*"
     },
     "authors": [
         {

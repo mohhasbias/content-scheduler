@@ -6,28 +6,47 @@ date_default_timezone_set('Asia/Jakarta');
 
 require_once __DIR__.'/vendor/autoload.php';
 
+use Goutte\Client;
+
 $app = new Silex\Application();
 
 $app->get('/', function() use($app) {
+  $client = new Client();
+
+  $crawler = $client->request('GET', 'http://madingkampus.com');
+
+  $listImages = $crawler->filter('.carousel-inner .thumbnail a img')->each(function($node) {
+    $imgSrc = $node->attr('src');
+    return array(
+      'url' => $imgSrc,
+      'type' => 'image/*',
+      'duration' => 1
+    );
+  });
+
   return $app->json(
-    array(
-      array(
-        'url' => 'http://madingkampus.com/pamflet/17-03-02-madingkampus-kpjlhlefqa-.jpeg',
-        'type' => 'image/jpeg',
-        'duration' => 1
-      ),
-      array(
-        'url' => 'http://madingkampus.com/pamflet/17-02-21-madingkampus-alkacgapjf-.PNG',
-        'type' => 'image/png',
-        'duration' => 1
-      ),
-      array(
-        'url' => 'http://madingkampus.com/pamflet/17-01-17-madingkampus-kqdeqhgnne-.png',
-        'type' => 'image/png',
-        'duration' => 1
-      )
-    )
+    $listImages
   );
+
+  // return $app->json(
+  //   array(
+  //     array(
+  //       'url' => 'http://madingkampus.com/pamflet/17-03-02-madingkampus-kpjlhlefqa-.jpeg',
+  //       'type' => 'image/jpeg',
+  //       'duration' => 1
+  //     ),
+  //     array(
+  //       'url' => 'http://madingkampus.com/pamflet/17-02-21-madingkampus-alkacgapjf-.PNG',
+  //       'type' => 'image/png',
+  //       'duration' => 1
+  //     ),
+  //     array(
+  //       'url' => 'http://madingkampus.com/pamflet/17-01-17-madingkampus-kqdeqhgnne-.png',
+  //       'type' => 'image/png',
+  //       'duration' => 1
+  //     )
+  //   )
+  // );
 });
 
 // enable CORS
