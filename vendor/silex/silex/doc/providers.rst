@@ -52,19 +52,19 @@ There are a few providers that you get out of the box. All of these are within
 the ``Silex\Provider`` namespace:
 
 * :doc:`DoctrineServiceProvider <providers/doctrine>`
-* :doc:`FormServiceProvider <providers/form>`
-* :doc:`HttpCacheServiceProvider <providers/http_cache>`
 * :doc:`MonologServiceProvider <providers/monolog>`
-* :doc:`RememberMeServiceProvider <providers/remember_me>`
-* :doc:`SecurityServiceProvider <providers/security>`
-* :doc:`SerializerServiceProvider <providers/serializer>`
-* :doc:`ServiceControllerServiceProvider <providers/service_controller>`
 * :doc:`SessionServiceProvider <providers/session>`
+* :doc:`SerializerServiceProvider <providers/serializer>`
 * :doc:`SwiftmailerServiceProvider <providers/swiftmailer>`
-* :doc:`TranslationServiceProvider <providers/translation>`
 * :doc:`TwigServiceProvider <providers/twig>`
+* :doc:`TranslationServiceProvider <providers/translation>`
 * :doc:`UrlGeneratorServiceProvider <providers/url_generator>`
 * :doc:`ValidatorServiceProvider <providers/validator>`
+* :doc:`HttpCacheServiceProvider <providers/http_cache>`
+* :doc:`FormServiceProvider <providers/form>`
+* :doc:`SecurityServiceProvider <providers/security>`
+* :doc:`RememberMeServiceProvider <providers/remember_me>`
+* :doc:`ServiceControllerServiceProvider <providers/service_controller>`
 
 Third party providers
 ~~~~~~~~~~~~~~~~~~~~~

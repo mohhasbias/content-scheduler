@@ -15,7 +15,7 @@ $app->get('/', function() use($app) {
 
   $crawler = $client->request('GET', 'http://madingkampus.com');
 
-  $listImages = $crawler->filter('.carousel-inner .thumbnail a img')->each(function($node) {
+  $listImages = $crawler->filter('.carousel-inner .thumbnail > a img')->each(function($node) {
     $imgSrc = $node->attr('src');
     return array(
       'url' => $imgSrc,

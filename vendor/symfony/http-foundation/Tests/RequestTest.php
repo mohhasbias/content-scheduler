@@ -11,11 +11,12 @@
 
 namespace Symfony\Component\HttpFoundation\Tests;
 
+use PHPUnit\Framework\TestCase;
 use Symfony\Component\HttpFoundation\Session\Storage\MockArraySessionStorage;
 use Symfony\Component\HttpFoundation\Session\Session;
 use Symfony\Component\HttpFoundation\Request;
 
-class RequestTest extends \PHPUnit_Framework_TestCase
+class RequestTest extends TestCase
 {
     public function testInitialize()
     {
@@ -1042,8 +1043,16 @@ class RequestTest extends \PHPUnit_Framework_TestCase
         $req->getContent($second);
     }
 
+    public function getContentCantBeCalledTwiceWithResourcesProvider()
+    {
+        return array(
+            'Resource then fetch' => array(true, false),
+            'Resource then resource' => array(true, true),
+        );
+    }
+
     /**
-     * @dataProvider getContentCantBeCalledTwiceWithResourcesProvider
+     * @dataProvider getContentCanBeCalledTwiceWithResourcesProvider
      * @requires PHP 5.6
      */
     public function testGetContentCanBeCalledTwiceWithResources($first, $second)
@@ -1060,12 +1069,14 @@ class RequestTest extends \PHPUnit_Framework_TestCase
             $b = stream_get_contents($b);
         }
 
-        $this->assertEquals($a, $b);
+        $this->assertSame($a, $b);
     }
 
-    public function getContentCantBeCalledTwiceWithResourcesProvider()
+    public function getContentCanBeCalledTwiceWithResourcesProvider()
     {
         return array(
+            'Fetch then fetch' => array(false, false),
+            'Fetch then resource' => array(false, true),
             'Resource then fetch' => array(true, false),
             'Resource then resource' => array(true, true),
         );
@@ -1080,7 +1091,6 @@ class RequestTest extends \PHPUnit_Framework_TestCase
             array('put'),
             array('delete'),
             array('patch'),
-
         );
     }
 
@@ -1256,25 +1266,6 @@ class RequestTest extends \PHPUnit_Framework_TestCase
         $this->assertEquals('/path%20test/info', $request->getPathInfo());
     }
 
-    public function testGetParameterPrecedence()
-    {
-        $request = new Request();
-        $request->attributes->set('foo', 'attr');
-        $request->query->set('foo', 'query');
-        $request->request->set('foo', 'body');
-
-        $this->assertSame('attr', $request->get('foo'));
-
-        $request->attributes->remove('foo');
-        $this->assertSame('query', $request->get('foo'));
-
-        $request->query->remove('foo');
-        $this->assertSame('body', $request->get('foo'));
-
-        $request->request->remove('foo');
-        $this->assertNull($request->get('foo'));
-    }
-
     public function testGetPreferredLanguage()
     {
         $request = new Request();
@@ -1410,15 +1401,17 @@ class RequestTest extends \PHPUnit_Framework_TestCase
         $request = new Request();
         $this->assertEquals('html', $request->getRequestFormat());
 
+        // Ensure that setting different default values over time is possible,
+        // aka. setRequestFormat determines the state.
+        $this->assertEquals('json', $request->getRequestFormat('json'));
+        $this->assertEquals('html', $request->getRequestFormat('html'));
+
         $request = new Request();
         $this->assertNull($request->getRequestFormat(null));
 
         $request = new Request();
         $this->assertNull($request->setRequestFormat('foo'));
         $this->assertEquals('foo', $request->getRequestFormat(null));
-
-        $request = new Request(array('_format' => 'foo'));
-        $this->assertEquals('html', $request->getRequestFormat());
     }
 
     public function testHasSession()
@@ -1909,7 +1902,13 @@ class RequestTest extends \PHPUnit_Framework_TestCase
                 $this->assertSame($expectedPort, $request->getPort());
             }
         } else {
-            $this->setExpectedException('UnexpectedValueException', 'Invalid Host');
+            if (method_exists($this, 'expectException')) {
+                $this->expectException('UnexpectedValueException');
+                $this->expectExceptionMessage('Invalid Host');
+            } else {
+                $this->setExpectedException('UnexpectedValueException', 'Invalid Host');
+            }
+
             $request->getHost();
         }
     }
@@ -1942,7 +1941,7 @@ class RequestTest extends \PHPUnit_Framework_TestCase
     {
         $request = new Request();
         $request->setMethod($method);
-        $this->assertEquals($safe, $request->isMethodSafe());
+        $this->assertEquals($safe, $request->isMethodSafe(false));
     }
 
     public function methodSafeProvider()
@@ -1957,6 +1956,39 @@ class RequestTest extends \PHPUnit_Framework_TestCase
             array('PURGE', false),
             array('OPTIONS', true),
             array('TRACE', true),
+            array('CONNECT', false),
+        );
+    }
+
+    public function testMethodSafeChecksCacheable()
+    {
+        $request = new Request();
+        $request->setMethod('OPTIONS');
+        $this->assertFalse($request->isMethodSafe());
+    }
+
+    /**
+     * @dataProvider methodCacheableProvider
+     */
+    public function testMethodCacheable($method, $chacheable)
+    {
+        $request = new Request();
+        $request->setMethod($method);
+        $this->assertEquals($chacheable, $request->isMethodCacheable());
+    }
+
+    public function methodCacheableProvider()
+    {
+        return array(
+            array('HEAD', true),
+            array('GET', true),
+            array('POST', false),
+            array('PUT', false),
+            array('PATCH', false),
+            array('DELETE', false),
+            array('PURGE', false),
+            array('OPTIONS', false),
+            array('TRACE', false),
             array('CONNECT', false),
         );
     }

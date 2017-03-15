@@ -9,11 +9,7 @@ responses.
 Requirements
 ------------
 
-Goutte depends on PHP 5.4+ and Guzzle 4+.
-
-.. tip::
-
-    If you need support for PHP 5.3 or Guzzle 3, use Goutte 1.x.
+Goutte works with PHP 5.3.3 or later.
 
 Installation
 ------------
@@ -22,7 +18,7 @@ Add ``fabpot/goutte`` as a require dependency in your ``composer.json`` file:
 
 .. code-block:: bash
 
-    composer require fabpot/goutte
+    php composer.phar require fabpot/goutte:~1.0
 
 .. tip::
 
@@ -31,9 +27,6 @@ Add ``fabpot/goutte`` as a require dependency in your ``composer.json`` file:
     .. code-block:: php
 
         require_once '/path/to/goutte.phar';
-
-    The phars for Goutte 1.x are also available for `download
-    <http://get.sensiolabs.org/goutte-v1.0.7.phar>`.
 
 Usage
 -----
@@ -57,12 +50,6 @@ Make requests with the ``request()`` method:
 The method returns a ``Crawler`` object
 (``Symfony\Component\DomCrawler\Crawler``).
 
-Fine-tune cURL options:
-
-.. code-block:: php
-
-    $client->getClient()->setDefaultOption('config/curl/'.CURLOPT_TIMEOUT, 60);
-
 Click on links:
 
 .. code-block:: php
@@ -76,7 +63,7 @@ Extract data:
 .. code-block:: php
 
     // Get the latest post in this category and display the titles
-    $crawler->filter('h2 > a')->each(function ($node) {
+    $crawler->filter('h2.post > a')->each(function ($node) {
         print $node->text()."\n";
     });
 
@@ -95,16 +82,16 @@ Submit forms:
 More Information
 ----------------
 
-Read the documentation of the BrowserKit and `DomCrawler
-<http://symfony.com/doc/any/components/dom_crawler.html>`_ Symfony Components
-for more information about what you can do with Goutte.
+Read the documentation of the BrowserKit and DomCrawler Symfony Components for
+more information about what you can do with Goutte.
 
 Technical Information
 ---------------------
 
 Goutte is a thin wrapper around the following fine PHP libraries:
 
-* Symfony Components: BrowserKit, CssSelector and DomCrawler;
+* Symfony Components: BrowserKit, ClassLoader, CssSelector, DomCrawler, Finder,
+  and Process;
 
 *  `Guzzle`_ HTTP Component.
 
